@@ -3,6 +3,10 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - '.github/workflows/collect.yml'
+      - 'radar/market_gap.py'
+      - 'radar/candidate_discovery.py'
+      - 'radar/discover.py'
       - 'config/platform_links.csv'
       - 'radar/platform_collect.py'
       - 'radar/core.py'
@@ -27,6 +31,8 @@ jobs:
         run: python -m radar.discover --timeout 10 --max-items 15
       - name: Extrair candidatos dos artigos chineses
         run: python -m radar.candidate_discovery
+      - name: Comparar pistas chinesas com imprensa PT e ES
+        run: python -m radar.market_gap --max-topics 6 --max-items 10 --timeout 10
       - name: Recolher metadados de links públicos chineses
         run: python -m radar.platform_collect --timeout 10
       - name: Recolher notícias RSS

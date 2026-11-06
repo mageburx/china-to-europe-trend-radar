@@ -12,6 +12,9 @@ QUERIES={
     "Automóvel":"汽车 内饰 实用 配件 新品",
     "Animais":"宠物 用品 创新 新品",
     "Viagem":"旅行 收纳 新品 实用",
+    "Produtos para arrumação": "折叠收纳箱 理线器 厨房收纳",
+    "Acessórios para automóvel": "车载垃圾桶 车载手机支架 后备箱收纳",
+    "Produtos para gatos": "猫砂盆 宠物饮水机 宠物梳毛",
 }
 
 

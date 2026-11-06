@@ -6,6 +6,7 @@ Only processes public articles already stored in the `discoveries` inbox.
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 from radar.core import DEFAULT_DB, connection, iso_dt, utcnow
@@ -23,7 +24,37 @@ KEYWORDS: dict[str, tuple[str, ...]] = {
     "Escovas para animais": ("宠物梳毛", "宠物刷毛", "宠物梳子"),
     "Fontes de água para animais": ("宠物饮水机", "猫饮水机"),
     "Coleiras refletoras para animais": ("反光宠物项圈", "反光狗项圈"),
+    "Tapetes antiderrapantes de carro": ("车载防滑垫", "汽车防滑垫"),
+    "Suportes de telemóvel para carro": ("车载手机支架", "汽车手机支架"),
+    "Redes de arrumação de bagageira": ("后备箱收纳网", "汽车后备箱网兜"),
+    "Escovas reutilizáveis para limpeza": ("清洁刷", "可重复使用清洁刷"),
+    "Sacos de lavagem para roupa": ("洗衣袋", "洗衣网袋"),
+    "Soluções de arrumação para cozinha": ("厨房收纳架", "厨房置物架"),
 }
+
+# Heuristic *untranslated* new-noun extraction for product words not in the dictionary.
+# Kept separate from known mappings; never submit unmapped words to PT/ES checks.
+PRODUCT_ENDINGS = ("收纳盒", "收纳袋", "收纳架", "垃圾桶", "清洁刷", "整理箱", "饮水机", "晾衣架", "猫砂盆", "洗地机")
+NOUN_PATTERN = re.compile(r"[\u4e00-\u9fff]{1,5}(?:" + "|".join(map(re.escape, PRODUCT_ENDINGS)) + r")")
+JUNK_WORDS = ("市场", "行业", "需求", "产品", "推出", "增长", "中国", "全球", "报告", "分析", "企业", "品类", "生活", "销量", "用户")
+
+
+def extract_unmapped_terms(title: str) -> list[tuple[str, str]]:
+    """Research-only untranslated Chinese nouns. At most two per headline."""
+    found=[]
+    for match in NOUN_PATTERN.finditer(title):
+        phrase=match.group(0)
+        # A title is NOT enough evidence that the noun is a sellable product.
+        if len(phrase) > 11 or any(x in phrase for x in JUNK_WORDS):
+            continue
+        if any(phrase in variants or any(v in phrase for v in variants)
+               for variants in KEYWORDS.values()):
+            continue
+        if phrase not in [p[1] for p in found]:
+            found.append(("A identificar: " + phrase, phrase))
+        if len(found)>=2:
+            break
+    return found
 
 
 def extract_terms(title: str) -> list[tuple[str, str]]:
@@ -64,7 +95,7 @@ def classify_inbox(db: Path = DEFAULT_DB) -> dict:
     try:
         for row in con.execute("SELECT category,source,title,url,observed_at FROM discoveries"):
             scanned += 1
-            for label, token in extract_terms(row["title"]):
+            for label, token in extract_terms(row["title"]) + extract_unmapped_terms(row["title"]):
                 cur = con.execute("""INSERT OR IGNORE INTO candidate_leads
                     (label_pt,matched_cn,category,source,title,url,published_at,detected_at)
                     VALUES (?,?,?,?,?,?,?,?)""",
