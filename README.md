@@ -1,4 +1,4 @@
-# 📡 China-to-Europe Trend Radar — MVP v0.1
+# 📡 China-to-Europe Trend Radar — MVP v0.3
 
 Radar de **hipóteses de produtos de consumo** para estudar diferenças temporais entre menções na China (CN) e na Europa (PT/ES). **Não mede vendas, nem demonstra tendências comerciais.**
 
@@ -6,6 +6,7 @@ Radar de **hipóteses de produtos de consumo** para estudar diferenças temporai
 
 - Catálogo de oito produtos candidatos (exemplos de pesquisa, **não tendências identificadas**)
 - Recolha RSS de menções no Google News, parametrizada para China / Portugal / Espanha
+- Recolha de metadados públicos de links pré-selecionados no Douyin; ligação à fonte e registo separado, sem contar como crescimento
 - Caixa de entrada de notícias chinesas por categoria (sinais a classificar, **não produtos identificados automaticamente**)
 - Ingestão de observações documentadas manualmente (Douyin, Xiaohongshu, 1688, etc.), sem contornar autenticação nem restrições das plataformas
 - Deduplicação persistente numa base SQLite local
@@ -161,6 +162,8 @@ Executar `python -m radar.platform_collect`. O processo tenta extrair o título 
 
 O CSV está intencionalmente vazio no primeiro commit; nenhuma observação proveniente diretamente das plataformas é anunciada até termos URLs reais e recolhas válidas. A automação diária já chama este coletor. Para estudos sistemáticos ou métricas de vendas é necessário acesso autorizado a APIs/datasets licenciados.
 
-### Proteção do site público
+## Ligações chinesas reais (v0.3)
 
-O site do Pages é agora gerado com `python -m radar.report --out site/index.html --public`, que retira **avaliações comerciais, custos/margens/notas** e **links recolhidos diretamente das plataformas chinesas**. Mostra apenas menções Google News e contexto editorial, com score recalculado sem dados comerciais. É um painel de demonstração, não a análise interna integral. O painel local/Streamlit conserva os dados completos. O repositório, se público, continua a divulgar os CSVs e a base SQLite; para proteger investigação deve ser tornado privado, e nesse caso confirmar se o plano GitHub permite Pages privado. Não colocar segredos em repositórios, mesmo privados.
+O ficheiro `config/platform_links.csv` inclui três publicações do Douyin encontradas em fontes públicas, associadas a duas hipóteses já existentes no catálogo (organizadores de espaço entre bancos e de bagageira). O coletor apenas regista metadados públicos, quando acessíveis, numa tabela SQLite `platform_evidence`. Links indisponíveis não viram observações. Não infere datas de publicação, visualizações, vendas ou crescimento.
+
+**Dados sensíveis:** o repositório é público e `data/radar.sqlite` é versionado; logo, o SQLite NÃO É privado, mesmo que o site GitHub Pages omita valores comerciais. Não guardar preços negociados, contactos de fornecedores, dados pessoais ou credenciais neste ficheiro. Uma futura área privada deve ter armazenamento privado (por exemplo, Supabase com RLS e autenticação, ou repositório privado separado).

@@ -1,7 +1,7 @@
 """Read public product/post metadata from curated Chinese-platform URLs.
 
 Not a platform-wide crawler. No login, CAPTCHA bypass, private metrics or sales inference.
-The timestamp denotes when a URL was checked, NOT when a post was published.
+First/last check timestamps are not publication timestamps and never boost the trend score.
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from urllib.parse import urlsplit, urljoin
 
 import requests
 
-from radar.core import DEFAULT_DB, ROOT, add_observation, connection, seed_catalog, utcnow
+from radar.core import DEFAULT_DB, ROOT, connection, iso_dt, seed_catalog, utcnow
 
 LINKS = ROOT / "config" / "platform_links.csv"
 ALLOWED_HOSTS = {
@@ -104,15 +104,18 @@ def fetch_public_title(session: requests.Session, url: str, timeout: int = 10) -
 
 
 def collect_platform_links(db: Path = DEFAULT_DB, links: Path = LINKS, timeout: int = 10) -> dict:
-    """Links are curated explicitly; nothing is automatically discovered from a platform."""
+    """Persist curated public-page checks separately from scored market observations.
+
+    Post publication dates, view counts and sales are deliberately NOT inferred.
+    """
     if not links.exists():
         raise FileNotFoundError(links)
     con = connection(db)
     seed_catalog(con)
     valid_products = {row[0] for row in con.execute("SELECT id FROM products")}
-    result = {"checked": 0, "inserted": 0, "skipped": 0, "errors": []}
+    result = {"checked": 0, "new_links": 0, "found": 0, "skipped": 0, "errors": []}
     session = requests.Session()
-    session.headers.update({"User-Agent": "ChinaEuropeTrendRadar/0.2 (public-metadata research)",
+    session.headers.update({"User-Agent": "ChinaEuropeTrendRadar/0.3 (public-metadata research)",
                             "Accept": "text/html"})
     try:
         with links.open(encoding="utf-8-sig", newline="") as stream:
@@ -130,14 +133,27 @@ def collect_platform_links(db: Path = DEFAULT_DB, links: Path = LINKS, timeout: 
                         raise ValueError(f"Produto desconhecido: {product_id}")
                     platform = platform_for(url)
                     fetched = fetch_public_title(session, url, timeout=timeout)
-                    if not fetched:
-                        result["skipped"] += 1
-                        continue
-                    title, final_url = fetched
-                    result["inserted"] += int(add_observation(
-                        con, product_id, "CN", f"{platform} / página pública",
-                        title, final_url, utcnow()))
+                    title = fetched[0] if fetched else None
+                    final_url = fetched[1] if fetched else url
+                    platform_for(final_url)
+                    status = "found" if title else "not_public"
+                    now = iso_dt(utcnow())
+                    existing = con.execute("SELECT 1 FROM platform_evidence WHERE url=?", (final_url,)).fetchone()
+                    con.execute("""INSERT INTO platform_evidence
+                        (url, product_id, platform, title, status, first_checked_at, last_checked_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(url) DO UPDATE SET
+                          title=excluded.title,
+                          status=excluded.status,
+                          last_checked_at=excluded.last_checked_at""",
+                        (final_url, product_id, platform, title, status, now, now))
                     con.commit()
+                    if not existing:
+                        result["new_links"] += 1
+                    if title:
+                        result["found"] += 1
+                    else:
+                        result["skipped"] += 1
                 except (ValueError, requests.RequestException, UnicodeError) as exc:
                     result["errors"].append(f"linha {line_number}: {str(exc)[:160]}")
     finally:

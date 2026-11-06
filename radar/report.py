@@ -11,6 +11,8 @@ def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,pub
     seed_catalog(con)
     products = summaries(con)
     observations = [dict(r) for r in con.execute("SELECT product_id,market,source,title,url,observed_at FROM observations ORDER BY observed_at DESC LIMIT 500")]
+    platform_evidence = [dict(row) for row in con.execute(
+        "SELECT product_id,platform,title,url,status,last_checked_at FROM platform_evidence ORDER BY last_checked_at DESC LIMIT 100")]
     if public:
         # A public GitHub Pages site must never include commercial notes, supplier
         # leads, cost or margin assessments. Scores are recomputed without them.
@@ -25,11 +27,13 @@ def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,pub
             sanitized.append(safe)
         products = sanitized
         observations = [o for o in observations if o["source"].startswith("Google News")]
+        platform_evidence = [row for row in platform_evidence if row["status"] == "found"]
     payload={
       "generated_at":iso_dt(utcnow()),
       "public_demo":public,
       "products":products,
       "observations":observations,
+      "platform_evidence":platform_evidence,
       "discoveries":[dict(r) for r in con.execute("SELECT category,source,title,url,observed_at FROM discoveries ORDER BY observed_at DESC LIMIT 200")]
     }
     con.close()

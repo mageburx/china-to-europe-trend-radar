@@ -53,6 +53,13 @@ def connection(path: Path = DEFAULT_DB) -> sqlite3.Connection:
         url TEXT NOT NULL UNIQUE, observed_at TEXT NOT NULL,
         ingested_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS platform_evidence (
+        url TEXT PRIMARY KEY, product_id TEXT NOT NULL, platform TEXT NOT NULL,
+        title TEXT, status TEXT NOT NULL, first_checked_at TEXT NOT NULL,
+        last_checked_at TEXT NOT NULL,
+        FOREIGN KEY(product_id) REFERENCES products(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_platform_product ON platform_evidence(product_id);
       CREATE TABLE IF NOT EXISTS assessments (
         product_id TEXT PRIMARY KEY,
         competition_eu_count INTEGER,

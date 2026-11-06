@@ -27,11 +27,12 @@ def test_collect_validated_url(tmp_path: Path):
     db = tmp_path / 'db.sqlite'
     with patch('radar.platform_collect.fetch_public_title', return_value=('Novo organizador modular de gavetas', 'https://www.douyin.com/video/123')):
         r = collect_platform_links(db=db, links=csv_file)
-        assert r['inserted'] == 1 and r['errors'] == []
-        assert collect_platform_links(db=db, links=csv_file)['inserted'] == 0
+        assert r['new_links'] == 1 and r['found'] == 1 and r['errors'] == []
+        assert collect_platform_links(db=db, links=csv_file)['new_links'] == 0
     with connection(db) as con:
-        row = con.execute('SELECT source, metric_value FROM observations WHERE product_id=?', ('drawer_dividers',)).fetchone()
-        assert row['source'].startswith('Douyin') and row['metric_value'] is None
+        row = con.execute('SELECT platform, status FROM platform_evidence WHERE product_id=?', ('drawer_dividers',)).fetchone()
+        assert row['platform'] == 'Douyin' and row['status'] == 'found'
+        assert con.execute('SELECT COUNT(*) FROM observations').fetchone()[0] == 0
 
 
 def test_empty_csv(tmp_path: Path):
@@ -39,3 +40,15 @@ def test_empty_csv(tmp_path: Path):
     csv_file.write_text('product_id,url\n', encoding='utf-8')
     result = collect_platform_links(tmp_path/'empty.sqlite', csv_file)
     assert result['checked'] == 0
+
+
+def test_unavailable_platform_link_does_not_count_as_trend(tmp_path: Path):
+    csv_file = tmp_path / 'links.csv'
+    csv_file.write_text('product_id,url\ncar_gap,https://www.douyin.com/video/456\n',encoding='utf-8')
+    db = tmp_path / 'db.sqlite'
+    with patch('radar.platform_collect.fetch_public_title',return_value=None):
+        result=collect_platform_links(db=db,links=csv_file)
+    assert result['skipped']==1
+    with connection(db) as con:
+        assert con.execute("SELECT status FROM platform_evidence").fetchone()[0]=='not_public'
+        assert con.execute('SELECT COUNT(*) FROM observations').fetchone()[0] == 0

@@ -1,6 +1,11 @@
 name: Recolher sinais RSS
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'config/platform_links.csv'
+      - 'radar/platform_collect.py'
+      - 'radar/core.py'
   schedule:
     - cron: '15 6 * * *'  # 06:15 UTC, diariamente; GitHub pode atrasar schedules
 permissions:
