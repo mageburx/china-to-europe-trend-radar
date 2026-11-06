@@ -1,6 +1,9 @@
 name: Recolher sinais RSS
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/collect.yml'
   schedule:
     - cron: '15 6 * * *'  # 06:15 UTC, diariamente; GitHub pode atrasar schedules
 permissions:
@@ -24,6 +27,11 @@ jobs:
         run: python -m radar.collect --timeout 10 --max-items 12
       - name: Atualizar dashboard HTML offline
         run: python -m radar.report
+      - name: Publicar dashboard HTML como artefacto descarregável
+        uses: actions/upload-artifact@v4
+        with:
+          name: china-europe-radar-dashboard
+          path: dashboard_offline.html
       - name: Guardar histórico e dashboard no repositório (MVP)
         run: |
           git config user.name 'github-actions[bot]'
