@@ -281,3 +281,6 @@ Se houver preço CNY, a taxa oficial de referência CNY/EUR do [BCE](https://www
 - Para examinar o estado: `python -m pytest -q` e `python -m radar.report --public`.
 
 **Critérios antes de comprar:** ficha técnica, unidade/pack, MOQ, prova da cotação, preço de retalho do equivalente, transporte, direitos/IVA aplicáveis, segurança/GPSR e avaliação da procura. Nenhum destes pontos é automaticamente aprovado pelos coletores.
+
+### Referências públicas indexadas (v0.9.1)
+O ficheiro `config/public_reference_snapshots.csv` mantém **apenas dois exemplos de preços publicamente visíveis** consultados em 2026-11-06: divisórias ajustáveis no Alibaba (1,44 EUR por peça para patamar 2–999) e conjunto de quatro divisórias na Leroy Merlin (52,53 EUR / embalagem de 4). As medidas, materiais, fornecedor, portes, MOQ e equivalência não foram auditados. **Não subtrair estes preços para inferir margem**. O módulo `radar.public_references` omite automaticamente snapshots com mais de 90 dias; preços negociados não devem ser registados aqui.
