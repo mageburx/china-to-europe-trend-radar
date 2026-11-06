@@ -8,6 +8,7 @@ from radar.candidate_discovery import ensure_candidates_table
 from radar.market_gap import ensure_market_tables, market_gap_summaries
 from radar.relevance import relevant_headline
 from radar.ebay_prices import price_summaries
+from radar.china_feeds import direct_feed_summary
 
 
 def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,public:bool=False)->Path:
@@ -42,9 +43,10 @@ def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,pub
       "observations":observations,
       "platform_evidence":platform_evidence,
       "discoveries":[dict(r) for r in con.execute("SELECT category,source,title,url,observed_at FROM discoveries ORDER BY observed_at DESC LIMIT 200")],
-      "candidate_leads":[dict(r) for r in con.execute("SELECT label_pt,matched_cn,category,title,url,published_at FROM candidate_leads ORDER BY published_at DESC LIMIT 100")],
+      "candidate_leads":[dict(r) for r in con.execute("SELECT label_pt,matched_cn,category,source,title,url,published_at FROM candidate_leads ORDER BY published_at DESC LIMIT 100")],
       "market_gap": market_gap_summaries(con),
       "ebay_prices": price_summaries(con),
+      "china_direct": direct_feed_summary(con),
       "market_evidence": [dict(r) for r in con.execute("SELECT label_pt,market,source,title,url,published_at FROM candidate_market_evidence ORDER BY published_at DESC LIMIT 150")]
     }
     con.close()

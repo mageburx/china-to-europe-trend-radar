@@ -1,3 +1,17 @@
+# China-to-Europe Trend Radar — v0.7 · 0 €
+
+**Dashboard:** https://mageburx.github.io/china-to-europe-trend-radar/
+
+A nova versão recolhe feeds RSS **diretamente** de IT之家, 爱范儿 e 36氪,
+com controlo de erros, deduplicação e datas de publicação reais.
+A recolha direta corre até **4× por dia** no GitHub Actions.
+Apenas títulos que mencionem produtos específicos geram candidatos, que permanecem **não verificados**.
+**Não** são dados de vendas, preços grossistas, stock ou procura comercial.
+Qualquer fonte bloqueada aparece como falha, não como falta de procura.
+**0 €:** não são necessárias credenciais nem serviços novos.
+
+---
+
 # 🔐 Novidade MVP v0.4 — Inteligência comercial privada
 
 A recolha RSS e o GitHub Pages continuam públicos. O novo `private_dashboard.py` usa **Supabase Auth + Row-Level Security** para guardar fornecedores e preços europeus privadamente e calcular margens simuladas. O classificador `radar.candidate_discovery` gera candidatos a partir de palavras-chave específicas em notícias chinesas, **não mede vendas nem atividade social**. Para ligar e alojar a área privada precisas de criar o projeto Supabase e configurar secrets: consulta **[README-private.md](README-private.md)**. Não inserir informação confidencial na SQLite pública.
@@ -212,3 +226,30 @@ Novo módulo: `radar/ebay_prices.py`. Consulta até **8 termos de pesquisa por d
 **Limites de interpretação:** matching é apenas por palavras-chave, não garante que o anúncio corresponda à variante exata. Não mede vendas, volume de procura, saturação, impostos, despesas de transporte, comissões ou margem. Nunca tratar preços eBay como preços grossistas chineses. O sistema não descarrega informação privada ou dados de conta. O eBay Browse API usa OAuth e credenciais gratuitas próprias; não há scraping de resultados eBay. Não usar preços para o Opportunity Score sem auditoria manual. Os dados de anúncios **públicos** passam a integrar o SQLite do repositório público, sem contatos privados de fornecedores.
 
 Sem credenciais, a recolha de notícias chinesas e a comparação RSS PT/ES continuam a funcionar; o módulo de preços fica sem dados e assinala essa limitação.
+
+
+## v0.7 — Fontes chinesas diretas, com proveniência
+
+Recolha independente do Google News, com feeds **oficiais** de
+[IT之家](https://www.ithome.com/rss/), [爱范儿](https://www.ifanr.com/feed)
+e [36氪](https://36kr.com/rss-center) (endpoint `https://36kr.com/feed-article`).
+
+```bash
+python -m radar.china_feeds
+python -m radar.report --public
+python -m pytest -q
+```
+
+- Apenas títulos que contêm **termos concretos de produtos** entram em `china_direct_articles` e `candidate_leads`. Os restantes artigos não alimentam score.
+- Usa a data de **publicação do RSS**; não troca data de leitura por data de lançamento. Publicações com mais de 21 dias, sem data válida ou sem URL HTTPS do próprio editor são ignoradas.
+- Deduplicação por URL normalizado e título normalizado (até entre editoras): um comunicado idêntico não conta como duas tendências.
+- A tabela `china_feed_checks` mostra fonte, última verificação, estado `ok/error`, contagem de artigos consultados e títulos elegíveis. **Erro/bloqueio não é zero procura.**
+- Os resultados são **evidência editorial**, não dados de vendas, preços grossistas ou pedidos. Menções chinesas não validam procura europeia.
+- Atualizações agendadas 4 vezes/dia no workflow `Fontes chinesas diretas`, sem APIs pagas. A frequência real pode atrasar e os feeds podem não disponibilizar todo o histórico.
+- Alguns feeds, em particular 36Kr, podem devolver desafios de segurança. O sistema não contorna barreiras; regista `error` e continua com outras fontes.
+- O site público pode mostrar títulos, links, proveniência e horas de publicação. Não armazena custos privados, credenciais ou fornecedores.
+
+### Próximos dados a validar (ainda não automatizados)
+
+Preços 1688/mercados grossistas, stock real, séries históricas de transações,
+comparação de SKUs e custos de importação. Nada disto é inferido de imprensa.
