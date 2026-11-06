@@ -33,7 +33,7 @@ jobs:
       - name: Criar site estático a partir da base de dados
         run: |
           mkdir -p site
-          python -m radar.report --out site/index.html
+          python -m radar.report --out site/index.html --public
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

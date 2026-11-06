@@ -58,3 +58,17 @@ def test_static_report_contains_real_json(tmp_path:Path):
     assert '"products"' in html
     assert '__RADAR_PAYLOAD__' not in html
     assert '<title>China → Europe Trend Radar</title>' in html
+
+
+def test_public_report_does_not_expose_commercial_fields(tmp_path:Path):
+    from radar.core import save_assessment
+    from radar.report import create_report
+    db=tmp_path/"data.sqlite"
+    con=connection(db)
+    seed_catalog(con)
+    save_assessment(con,"car_gap",consumer_price_eur=55,landed_cost_eur=7,notes="SEGREDO_FORNECEDOR_ABC")
+    con.close()
+    html=create_report(tmp_path/"index.html",db=db,public=True).read_text(encoding="utf-8")
+    assert "SEGREDO_FORNECEDOR_ABC" not in html
+    assert '"public_demo": true' in html
+    assert '"consumer_price_eur"' not in html
