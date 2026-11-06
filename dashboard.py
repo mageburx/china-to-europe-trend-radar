@@ -2,11 +2,11 @@
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 import streamlit as st
-from radar.core import DEFAULT_DB, connection, seed_catalog, summaries, save_assessment
+from radar.core import DEFAULT_DB, connection, seed_catalog, summaries
 
 st.set_page_config(page_title="China → Europe Trend Radar",page_icon="📡",layout="wide")
 st.title("📡 China → Europe Trend Radar")
-st.caption("MVP v0.1 · Observações verificáveis ≠ procura ou vendas · Pontuação exploratória")
+st.caption("MVP v0.4 · Dashboard público (somente leitura) · Observações verificáveis ≠ procura ou vendas · Pontuação exploratória")
 
 con = connection(DEFAULT_DB)
 seed_catalog(con)
@@ -40,7 +40,6 @@ if filtered:
     chosen=st.selectbox("Produto a analisar",[p["id"] for p in filtered],
                         format_func=lambda x:next(p["name"] for p in filtered if p["id"]==x))
     p=next(p for p in filtered if p["id"]==chosen)
-    a=p["assessment"]
     st.markdown(f"**Pontuação exploratória: {p['score']}/100** · **{p['status']}**")
     st.caption("Não é probabilidade de sucesso, previsão de vendas ou validação legal.")
     st.bar_chart(pd.DataFrame({"Pontos":p["components"]}))
@@ -59,43 +58,7 @@ if filtered:
                      hide_index=True,use_container_width=True)
     else:
         st.caption("Ainda não existem menções para este produto.")
-    st.markdown("#### Avaliação manual da oportunidade")
-    st.caption("Os campos financeiros, concorrência e conformidade não são inferidos de notícias. Introduz apenas valores verificados.")
-    with st.form("assessment"):
-        l,r=st.columns(2)
-        with l:
-            competition=st.number_input("Concorrentes diretos na UE (0 = nenhum encontrado)",
-                min_value=0,value=int(a.get("competition_eu_count") or 0),step=1)
-            known_comp=st.checkbox("Concorrência auditada",value=a.get("competition_eu_count") is not None)
-            price=st.number_input("Preço de venda c/IVA (€)",min_value=0.0,
-                value=float(a.get("consumer_price_eur") or 0),step=0.5)
-            landed=st.number_input("Custo unitário posto em PT (€)",min_value=0.0,
-                value=float(a.get("landed_cost_eur") or 0),step=0.5)
-            known_price=st.checkbox("Preço e custo verificados",value=a.get("consumer_price_eur") is not None and a.get("landed_cost_eur") is not None)
-        with r:
-            delivery=st.number_input("Entrega/embalagem por unidade (€)",min_value=0.0,value=float(a.get("delivery_eur") or 0),step=0.5)
-            marketing=st.number_input("Aquisição de cliente (€)",min_value=0.0,value=float(a.get("marketing_eur") or 0),step=0.5)
-            fees=st.number_input("Taxas/comissões (€)",min_value=0.0,value=float(a.get("fees_eur") or 0),step=0.5)
-            returns=st.number_input("Provisão devoluções (€)",min_value=0.0,value=float(a.get("returns_eur") or 0),step=0.5)
-            compliance=st.selectbox("Revisão de conformidade (não é certificação)",
-                ["pending","review","cleared","blocked"],
-                index=["pending","review","cleared","blocked"].index(a.get("compliance_status") or "pending"),
-                format_func=lambda x:{"pending":"Pendente","review":"Em revisão","cleared":"Documentação revista","blocked":"Bloqueado"}[x])
-            visual=st.slider("Potencial de demonstração (avaliação manual)",0,10,int(a.get("visual_score") or 0))
-        notes=st.text_area("Notas e evidências",value=a.get("notes") or "")
-        saved=st.form_submit_button("Guardar avaliação")
-    if saved:
-        if known_price and (price<=0 or landed<=0):
-            st.error("Introduz preço e custo maiores do que zero, ou desmarca 'verificados'.")
-        else:
-            save_assessment(con,chosen,competition_eu_count=int(competition) if known_comp else None,
-                consumer_price_eur=float(price) if known_price else None,
-                landed_cost_eur=float(landed) if known_price else None,
-                delivery_eur=float(delivery),marketing_eur=float(marketing),fees_eur=float(fees),
-                returns_eur=float(returns),compliance_status=compliance,
-                visual_score=visual,notes=notes)
-            st.success("Avaliação guardada localmente.")
-            st.rerun()
+    st.info("Este painel é só de leitura. Para fornecedores, margens e notas, utiliza private_dashboard.py com Supabase Auth.")
     if p["profit"] is not None:
         st.metric("Contribuição unitária estimada (sem IVA, antes de fixos e IRC/IRS)",f"{p['profit']:.2f} €")
         st.caption("Modelo simplificado: verificar IVA dedutível, direitos aduaneiros, tratamento dos portes, comissões e devoluções.")

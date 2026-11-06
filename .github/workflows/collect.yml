@@ -25,12 +25,16 @@ jobs:
       - run: python -m pip install "requests>=2.32,<3"
       - name: Descobrir novos sinais chineses
         run: python -m radar.discover --timeout 10 --max-items 15
+      - name: Extrair candidatos dos artigos chineses
+        run: python -m radar.candidate_discovery
       - name: Recolher metadados de links públicos chineses
         run: python -m radar.platform_collect --timeout 10
       - name: Recolher notícias RSS
         run: python -m radar.collect --timeout 10 --max-items 12
-      - name: Atualizar dashboard HTML offline
-        run: python -m radar.report
+      - name: Limpar registos financeiros no SQLite público
+        run: python -m radar.public_safety
+      - name: Atualizar dashboard HTML público
+        run: python -m radar.report --public
       - name: Guardar histórico e dashboard no repositório (MVP)
         run: |
           git config user.name 'github-actions[bot]'

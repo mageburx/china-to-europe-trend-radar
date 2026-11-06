@@ -4,11 +4,13 @@ import argparse
 import json
 from pathlib import Path
 from radar.core import DEFAULT_DB, ROOT, connection, seed_catalog, summaries, utcnow, iso_dt, score_product
+from radar.candidate_discovery import ensure_candidates_table
 
 
 def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,public:bool=False)->Path:
     con=connection(db)
     seed_catalog(con)
+    ensure_candidates_table(con)
     products = summaries(con)
     observations = [dict(r) for r in con.execute("SELECT product_id,market,source,title,url,observed_at FROM observations ORDER BY observed_at DESC LIMIT 500")]
     platform_evidence = [dict(row) for row in con.execute(
@@ -34,7 +36,8 @@ def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,pub
       "products":products,
       "observations":observations,
       "platform_evidence":platform_evidence,
-      "discoveries":[dict(r) for r in con.execute("SELECT category,source,title,url,observed_at FROM discoveries ORDER BY observed_at DESC LIMIT 200")]
+      "discoveries":[dict(r) for r in con.execute("SELECT category,source,title,url,observed_at FROM discoveries ORDER BY observed_at DESC LIMIT 200")],
+      "candidate_leads":[dict(r) for r in con.execute("SELECT label_pt,matched_cn,category,title,url,published_at FROM candidate_leads ORDER BY published_at DESC LIMIT 100")]
     }
     con.close()
     template=(ROOT/"radar"/"offline_template.html").read_text(encoding="utf-8")

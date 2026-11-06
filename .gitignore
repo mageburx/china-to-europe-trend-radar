@@ -6,3 +6,9 @@ __pycache__/
 *.log
 .DS_Store
 .streamlit/secrets.toml
+*.db-journal
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+.streamlit/secrets.toml
+secrets.toml
