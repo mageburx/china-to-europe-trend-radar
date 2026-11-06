@@ -1,8 +1,8 @@
-# China-to-Europe Trend Radar — v0.7 · 0 €
+# China-to-Europe Trend Radar — v0.7.1 · 0 €
 
 **Dashboard:** https://mageburx.github.io/china-to-europe-trend-radar/
 
-A nova versão recolhe feeds RSS **diretamente** de IT之家, 爱范儿 e 36氪,
+A nova versão recolhe RSS **diretamente** de IT之家, 爱范儿, 36氪 e 什么值得买,
 com controlo de erros, deduplicação e datas de publicação reais.
 A recolha direta corre até **4× por dia** no GitHub Actions.
 Apenas títulos que mencionem produtos específicos geram candidatos, que permanecem **não verificados**.
@@ -253,3 +253,15 @@ python -m pytest -q
 
 Preços 1688/mercados grossistas, stock real, séries históricas de transações,
 comparação de SKUs e custos de importação. Nada disto é inferido de imprensa.
+
+### v0.7.1 — sinais de produtos e preços promocionais na China
+
+`什么值得买` (SMZDM) possui RSS de ofertas e avaliações ([fonte oficial](https://www.smzdm.com/p/1228717/)).
+O projeto tenta consultar por HTTPS `https://feed.smzdm.com/` e `https://post.smzdm.com/feed`.
+Se recusarem a consulta, surgem como **fontes com erro**, nunca como falsas vendas zero.
+
+Somente títulos com um termo específico de produto entram no histórico. Um valor de
+`49.90元` no título de uma promoção pode ser guardado como **preço anunciado CNY**
+(se não houver cupão, preço mínimo ou desconto ambiguamente condicionado).
+Não significa preço de aquisição grossista, transação concluída ou oportunidade de arbitragem.
+Os valores ficam no site público apenas como citações verificáveis de preços de retalho.

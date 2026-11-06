@@ -34,6 +34,7 @@ class Feed:
     name: str
     rss_url: str
     domain: str
+    kind: str = "editorial"
 
 
 # Endpoints documented by their publishers. 36Kr may return a challenge page:
@@ -42,6 +43,8 @@ FEEDS = (
     Feed("IT之家", "https://www.ithome.com/rss/", "ithome.com"),
     Feed("爱范儿", "https://www.ifanr.com/feed", "ifanr.com"),
     Feed("36氪", "https://36kr.com/feed-article", "36kr.com"),
+    Feed("什么值得买 · 好价", "https://feed.smzdm.com/", "smzdm.com", "consumer_deals"),
+    Feed("什么值得买 · 评测", "https://post.smzdm.com/feed", "smzdm.com", "reviews"),
 )
 
 
@@ -58,6 +61,10 @@ def ensure_china_feed_tables(con) -> None:
         matched_labels TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_china_direct_date ON china_direct_articles(published_at);
+      CREATE TABLE IF NOT EXISTS china_retail_quotes (
+        url TEXT PRIMARY KEY, publisher TEXT NOT NULL, title TEXT NOT NULL,
+        price_cny REAL NOT NULL, published_at TEXT NOT NULL, observed_at TEXT NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS china_feed_checks (
         publisher TEXT PRIMARY KEY,
         feed_url TEXT NOT NULL,
@@ -99,8 +106,11 @@ def clean_article_url(url: str, domain: str) -> str | None:
     try:
         parts = urlsplit(url)
         host = (parts.hostname or "").lower()
+        hosts = {domain, "www." + domain}
+        if domain == "smzdm.com":
+            hosts |= {"post.smzdm.com", "faxian.smzdm.com", "fx.smzdm.com", "show.smzdm.com"}
         if (parts.scheme != "https" or parts.username or parts.password or parts.port
-                or host not in {domain, "www." + domain}):
+                or host not in hosts):
             return None
         if not parts.path or parts.path == "/":
             return None
@@ -114,6 +124,20 @@ def clean_article_url(url: str, domain: str) -> str | None:
 def normalize_title(title: str) -> str:
     text = unicodedata.normalize("NFKC", title).casefold()
     return "".join(c for c in text if unicodedata.category(c)[0] in ("L", "N"))
+
+
+def price_from_deal_title(title: str) -> float | None:
+    """Conservative CNY retail promo quote, never wholesale or a completed sale.
+
+Only accept one explicit price, without coupon, multi-buy or range caveats.
+    """
+    if any(term in title for term in ("用券", "需买", "满减", "满折", "元起", "券后", "拍下", "起售", "折后", "元/", "元每", "凑单")):
+        return None
+    found = re.findall(r"(?<![0-9])(\d{1,5}(?:\.\d{1,2})?)\s*元(?![0-9])", title)
+    if len(found) != 1:
+        return None
+    amount = float(found[0])
+    return amount if 1 <= amount <= 20_000 else None
 
 
 def parse_direct_feed(content: bytes, domain: str) -> list[dict]:
@@ -194,6 +218,14 @@ def collect_direct_china(db: Path = DEFAULT_DB, session=None, timeout: int = 12,
                     if not cur.rowcount:
                         continue  # duplicate article/title, not an independent signal
                     added += 1
+                    if feed.kind == "consumer_deals":
+                        amount = price_from_deal_title(title)
+                        if amount is not None:
+                            con.execute("""INSERT OR IGNORE INTO china_retail_quotes
+                              (url,publisher,title,price_cny,published_at,observed_at)
+                              VALUES (?,?,?,?,?,?)""",
+                              (entry["url"],feed.name,title,amount,
+                               iso_dt(entry["published_at"]),iso_dt(now)))
                     for label, phrase in matches:
                         c = con.execute("""INSERT OR IGNORE INTO candidate_leads
                             (label_pt,matched_cn,category,source,title,url,published_at,detected_at)
@@ -237,7 +269,11 @@ def direct_feed_summary(con, now=None) -> dict:
              FROM china_direct_articles WHERE published_at >= ? AND published_at <= ?
              ORDER BY published_at DESC LIMIT 80""",
              (iso_dt(now - timedelta(days=21)), iso_dt(now)))]
-    return {"feeds": checks, "articles": articles}
+    quotes = [dict(row) for row in con.execute("""SELECT publisher,title,url,price_cny,published_at
+                FROM china_retail_quotes WHERE published_at>=? AND published_at<=?
+                ORDER BY published_at DESC LIMIT 40""",
+                (iso_dt(now-timedelta(days=14)),iso_dt(now)))]
+    return {"feeds": checks, "articles": articles, "quotes": quotes}
 
 
 def main() -> None:

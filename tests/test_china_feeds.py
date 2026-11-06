@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from radar.china_feeds import (FEEDS, collect_direct_china, clean_article_url,
-                               direct_feed_summary, parse_direct_feed)
+                               direct_feed_summary, parse_direct_feed, price_from_deal_title)
 from radar.core import connection
 from radar.report import create_report
 
@@ -114,3 +114,23 @@ def test_exact_duplicate_titles_across_publishers_not_double_counted(tmp_path):
 def test_feed_over_bytes_limit():
     with pytest.raises(ValueError,match='limit'):
         parse_direct_feed(b' ' * 1_500_001,'ithome.com')
+
+
+def test_retail_deal_price_is_explicit_and_unambiguous():
+    assert price_from_deal_title('汽车后备箱收纳箱 49.90元') == 49.90
+    assert price_from_deal_title('车载收纳盒 49元（需用券）') is None
+    assert price_from_deal_title('收纳盒 10元 20元') is None
+    assert price_from_deal_title('收纳盒 15元起') is None
+
+def test_retail_deal_quote_is_not_wholesale_price(tmp_path):
+    feed = FEEDS[3]
+    assert clean_article_url('https://post.smzdm.com/p/example','smzdm.com')
+    entry=rss(title='汽车后备箱收纳箱新品 49.90元',url='https://www.smzdm.com/p/12345/')
+    r=collect_direct_china(tmp_path/'retail.sqlite',now=NOW,feeds=(feed,),
+        session=FakeSession({feed.rss_url:FakeResponse(entry)}))
+    assert r['new_leads'] == 1
+    with connection(tmp_path/'retail.sqlite') as con:
+        summary=direct_feed_summary(con,now=NOW)
+        assert len(summary['quotes'])==1
+        assert summary['quotes'][0]['price_cny']==49.90
+        assert con.execute('SELECT COUNT(*) FROM observations').fetchone()[0] == 0
