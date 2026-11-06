@@ -269,3 +269,15 @@ Se houver preço CNY, a taxa oficial de referência CNY/EUR do [BCE](https://www
 - O registo guarda apenas título e preço publicados; NÃO colocar fornecedores privados, custos negociados, contactos ou chaves no SQLite versionado.
 - Recolha gratuita mas não garantida: se 1688 exigir JavaScript/login, o valor ficará por verificar.
 - Encomenda mínima, SKU, moeda, variantes, segurança e custos totais ainda exigem análise individual antes de qualquer compra.
+
+
+## v0.9 — recolha híbrida sem custos + investigação privada local
+
+- `python -m radar.public_market_offers` verifica **até oito URLs de produto previamente selecionadas** na lista `config/public_offer_watchlist.csv` (domínios permitidos: páginas públicas `www.alibaba.com/product-detail` e `www.leroymerlin.pt/produtos`). Usa apenas HTTPS, não segue redirects, não autentica nem contorna bloqueios. Apenas preços explícitos em um único `Product/Offer` estruturado são considerados. Qualquer preço ambíguo é omitido; os estados `blocked`, `unavailable`, `title_only` e `error` permanecem visíveis.
+- O dashboard público inclui a **fila de investigação** com até oito candidatos, informações de fontes públicas e tarefas pendentes. Um preço Alibaba e um preço de retalho europeu **não demonstram equivalência de SKU, embalagem ou margem**. Nunca calcular rentabilidade com esses dois valores sem uma ficha técnica e cotações de frete/impostos.
+- Dois links iniciais em `config/public_offer_watchlist.csv` são **referências de investigação, não produtos equivalentes**: divisórias ajustáveis no Alibaba e na Leroy Merlin. A página Alibaba pode estar inacessível ao workflow; neste caso apenas fica registado o bloqueio.
+- Para guardar propostas reais de fornecedores **sem colocá-las no repositório público**, preencher uma cópia local do `config/private_quotes_template.csv` e executar `python -m radar.private_quotes data/minhas_cotacoes.csv`. A base privada é `data/private_sourcing.sqlite`, ignorada pelo Git. O importador apenas valida formato e regista a proposta como declarada pelo utilizador; não a certifica.
+- Evitar guardar dados pessoais, contactos de fornecedores, custos negociados ou outras informações confidenciais no SQLite público `data/radar.sqlite` ou no catálogo versionado em Git. Nenhuma infraestrutura paga é necessária.
+- Para examinar o estado: `python -m pytest -q` e `python -m radar.report --public`.
+
+**Critérios antes de comprar:** ficha técnica, unidade/pack, MOQ, prova da cotação, preço de retalho do equivalente, transporte, direitos/IVA aplicáveis, segurança/GPSR e avaliação da procura. Nenhum destes pontos é automaticamente aprovado pelos coletores.

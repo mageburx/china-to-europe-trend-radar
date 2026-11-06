@@ -11,6 +11,8 @@ from radar.ebay_prices import price_summaries
 from radar.china_feeds import direct_feed_summary
 from radar.china_topics import topic_summaries
 from radar.wholesale_watch import wholesale_summaries
+from radar.public_market_offers import summaries as public_market_offer_summaries
+from radar.sourcing_shortlist import shortlist
 
 
 def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,public:bool=False)->Path:
@@ -49,6 +51,8 @@ def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,pub
       "market_gap": market_gap_summaries(con),
       "ebay_prices": price_summaries(con),
       "wholesale_watch": wholesale_summaries(con),
+      "public_market_offers": public_market_offer_summaries(con),
+      "sourcing_shortlist": shortlist(con),
       "china_direct": direct_feed_summary(con),
       "china_topics": topic_summaries(con),
       "market_evidence": [dict(r) for r in con.execute("SELECT label_pt,market,source,title,url,published_at FROM candidate_market_evidence ORDER BY published_at DESC LIMIT 150")]

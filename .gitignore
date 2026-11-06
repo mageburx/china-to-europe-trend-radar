@@ -12,3 +12,7 @@ __pycache__/
 *.sqlite-shm
 .streamlit/secrets.toml
 secrets.toml
+# Privacidade: nunca colocar cotações e fornecedores negociados no GitHub público.
+data/private_*
+data/*private*.sqlite*
+data/minhas_*.csv
