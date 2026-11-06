@@ -11,6 +11,8 @@ on:
       - 'radar/platform_collect.py'
       - 'radar/core.py'
       - 'radar/ebay_prices.py'
+      - 'radar/wholesale_watch.py'
+      - 'config/wholesale_watchlist.csv'
   schedule:
     - cron: '15 6 * * *'  # 06:15 UTC, diariamente; GitHub pode atrasar schedules
 permissions:
@@ -40,6 +42,8 @@ jobs:
         run: python -m radar.platform_collect --timeout 10
       - name: Recolher notícias RSS
         run: python -m radar.collect --timeout 10 --max-items 12
+      - name: Verificar ofertas públicas 1688 e câmbio BCE (sem credenciais)
+        run: python -m radar.wholesale_watch --max-offers 8 --timeout 8
       - name: Comparar preços de anúncios públicos no eBay Espanha (API gratuita opcional)
         env:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}

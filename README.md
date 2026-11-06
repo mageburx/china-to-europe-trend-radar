@@ -1,8 +1,8 @@
-# China-to-Europe Trend Radar — v0.7.2 · 0 €
+# China-to-Europe Trend Radar — v0.7 · 0 €
 
 **Dashboard:** https://mageburx.github.io/china-to-europe-trend-radar/
 
-A nova versão recolhe RSS **diretamente** de IT之家, 爱范儿, 36氪 e 什么值得买,
+A nova versão recolhe feeds RSS **diretamente** de IT之家, 爱范儿 e 36氪,
 com controlo de erros, deduplicação e datas de publicação reais.
 A recolha direta corre até **4× por dia** no GitHub Actions.
 Apenas títulos que mencionem produtos específicos geram candidatos, que permanecem **não verificados**.
@@ -254,25 +254,18 @@ python -m pytest -q
 Preços 1688/mercados grossistas, stock real, séries históricas de transações,
 comparação de SKUs e custos de importação. Nada disto é inferido de imprensa.
 
-### v0.7.1 — sinais de produtos e preços promocionais na China
+## v0.8 — Vigiar ofertas 1688 e câmbio gratuito (sem API paga)
 
-`什么值得买` (SMZDM) possui RSS de ofertas e avaliações ([fonte oficial](https://www.smzdm.com/p/1228717/)).
-O projeto tenta consultar por HTTPS `https://feed.smzdm.com/` e `https://post.smzdm.com/feed`.
-Se recusarem a consulta, surgem como **fontes com erro**, nunca como falsas vendas zero.
+A lista **pública** `config/wholesale_watchlist.csv` contém três URLs 1688 de produtos automóveis, identificados em páginas de terceiros e **não validados como ofertas atuais**. Os URL originais foram encontrados nas seguintes fontes: [produto entre bancos](https://www.darabuying.com/zh-CHS/1688wholesale/china_alibaba_item/669802549483.html), [organizador de bagageira 1](https://www.1688wholesale.com/en/1688/china_alibaba_item/624390853400.html), [organizador de bagageira 2](https://www.1688wholesale.com/en/1688/china_alibaba_item/672657345291.html). Estas fontes de terceiros **não** fornecem preços verificados diretamente no 1688.
 
-Somente títulos com um termo específico de produto entram no histórico. Um valor de
-`49.90元` no título de uma promoção pode ser guardado como **preço anunciado CNY**
-(se não houver cupão, preço mínimo ou desconto ambiguamente condicionado).
-Não significa preço de aquisição grossista, transação concluída ou oportunidade de arbitragem.
-Os valores ficam no site público apenas como citações verificáveis de preços de retalho.
+A cada recolha diária, `python -m radar.wholesale_watch` visita no máximo 8 URLs `detail.1688.com/offer/<ID>.html`, sem login, sem seguir redirecionamentos nem superar CAPTCHA. Faz parsing exclusivamente de um único preço `Offer.price` com `priceCurrency=CNY` num `Product` JSON-LD (nunca preços extraídos de texto livre, intervalos ou múltiplas variantes). Regista `price_observed`, `title_only`, `blocked`, `unavailable` ou `error`, sem tratar verificações falhadas como preços atuais. Históricos com data permitem estudar alterações reais, sem confundir republicações com novas tendências.
 
-### v0.7.2 — tendências setoriais sem falso sinal comercial
+Se houver preço CNY, a taxa oficial de referência CNY/EUR do [BCE](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml) (até 7 dias) permite mostrar a conversão indicativa para euros. Sem taxa recente, **não há conversão**. Preços de eBay Espanha provenientes da API gratuita opcional ficam lado a lado com os do 1688 mas **não são considerados produtos equivalentes** sem revisão humana. Não há cálculo de margem, imposto ou custos de importação automáticos.
 
-Mesmo quando um RSS não menciona os 16 produtos em catálogo, pode mencionar
-classes de produtos (ex.: auriculares ou acessórios auto).
-O módulo `radar.china_topics` regista seis categorias de consumo com palavras-chave
-explícitas, título, editor, URL e data. O dashboard mostra os artigos nos
-últimos 14 dias e a diversidade de editoras.
+### Avisos de segurança e limites
 
-**Os temas não criam novos produtos, não entram no Opportunity Score e não
-representam crescimento:** são hipóteses editoriais para posterior investigação.
+- Apenas dados públicos, URLs com domínio permitido; não se contornam bloqueios e não se enviam cookies.
+- Ausência de preço explícito **não** significa que o produto seja gratuito, esgotado ou que não exista.
+- O registo guarda apenas título e preço publicados; NÃO colocar fornecedores privados, custos negociados, contactos ou chaves no SQLite versionado.
+- Recolha gratuita mas não garantida: se 1688 exigir JavaScript/login, o valor ficará por verificar.
+- Encomenda mínima, SKU, moeda, variantes, segurança e custos totais ainda exigem análise individual antes de qualquer compra.
