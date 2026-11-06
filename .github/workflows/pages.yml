@@ -1,0 +1,44 @@
+name: Publicar dashboard GitHub Pages
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pages.yml'
+      - 'radar/report.py'
+      - 'radar/offline_template.html'
+      - 'dashboard_offline.html'
+      - 'data/radar.sqlite'
+  workflow_run:
+    workflows: ['Recolher sinais RSS']
+    types: [completed]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: radar-pages
+  cancel-in-progress: false
+jobs:
+  pages:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Criar site estático a partir da base de dados
+        run: |
+          mkdir -p site
+          python -m radar.report --out site/index.html
+          touch site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Publicar site
+        id: deployment
+        uses: actions/deploy-pages@v4

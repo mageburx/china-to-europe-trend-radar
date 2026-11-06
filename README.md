@@ -139,3 +139,24 @@ Para que o dashboard offline tenha fontes verificáveis, incluímos três **arti
 - 11/10/2026 — [People's Daily/Economic Daily: padrões de consumo em viagens](https://finance.people.com.cn/n1/2026/1011/c1004-40812285.html)
 
 **Estado dos testes neste ambiente:** os testes unitários do sistema, armazenamento e pontuação passaram. A saída RSS ao vivo e a instalação do Streamlit não puderam ser testadas aqui por falta de acesso de rede; devem ser verificadas no GitHub Actions/PC.
+
+## v0.2 — Dashboard online e links chineses públicos
+
+### GitHub Pages (visualização no iPhone)
+
+Existe um workflow separado `.github/workflows/pages.yml` que gera `site/index.html` com `radar.report` e publica através de **GitHub Pages**. Executa-se depois da recolha e nos pushes relevantes. **Para ativar pela primeira vez:** em `Settings → Pages → Build and deployment → Source`, selecionar **GitHub Actions**. Depois, em `Actions`, executar **Publicar dashboard GitHub Pages → Run workflow**. Depois da execução bem-sucedida, o endereço esperado é `https://mageburx.github.io/china-to-europe-trend-radar/`.
+
+**AVISO:** GitHub Pages é público mesmo com o repositório privado em planos que suportem Pages privado. Nunca guardar avaliações, contactos, custos confidenciais ou dados pessoais no dashboard público. Este MVP exporta apenas o catálogo, observações e avaliações que existirem em `data/radar.sqlite`, logo não introduzir informação sensível nessa base.
+
+### Leitura de páginas públicas Douyin, Xiaohongshu, 1688 e Taobao
+
+O ficheiro `config/platform_links.csv` contém cabeçalho `product_id,url`. Inserir uma linha por URL **público e verificável** de um produto que corresponda a um dos IDs em `config/products.csv`. Exemplo **ilustrativo, não um post verificado**:
+
+```csv
+product_id,url
+car_gap,https://www.douyin.com/video/123456789
+```
+
+Executar `python -m radar.platform_collect`. O processo tenta extrair o título HTML/`og:title`, sem login nem contornar anti-bot. Admite somente domínios explicitamente autorizados e HTTPS; bloqueia redirects fora dos domínios permitidos e ignora páginas de autenticação, metadados ausentes e páginas com mais de 250 KB. Não recolhe métricas de visualizações, favoritos ou vendas. Se um site carregar o título apenas com JavaScript ou exigir login, a observação é omitida — não fabricamos dados. O horário da observação é o da recolha, não necessariamente o da publicação original.
+
+O CSV está intencionalmente vazio no primeiro commit; nenhuma observação proveniente diretamente das plataformas é anunciada até termos URLs reais e recolhas válidas. A automação diária já chama este coletor. Para estudos sistemáticos ou métricas de vendas é necessário acesso autorizado a APIs/datasets licenciados.
