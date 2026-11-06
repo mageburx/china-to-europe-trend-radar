@@ -6,6 +6,7 @@ from pathlib import Path
 from radar.core import DEFAULT_DB, ROOT, connection, seed_catalog, summaries, utcnow, iso_dt, score_product
 from radar.candidate_discovery import ensure_candidates_table
 from radar.market_gap import ensure_market_tables, market_gap_summaries
+from radar.relevance import relevant_headline
 
 
 def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,public:bool=False)->Path:
@@ -14,7 +15,8 @@ def create_report(path:Path=ROOT/"dashboard_offline.html",db:Path=DEFAULT_DB,pub
     ensure_candidates_table(con)
     ensure_market_tables(con)
     products = summaries(con)
-    observations = [dict(r) for r in con.execute("SELECT product_id,market,source,title,url,observed_at FROM observations ORDER BY observed_at DESC LIMIT 500")]
+    observations = [dict(r) for r in con.execute("SELECT product_id,market,source,title,url,observed_at FROM observations ORDER BY observed_at DESC LIMIT 500")
+                    if relevant_headline(r["product_id"], r["market"], r["title"], r["source"])]
     platform_evidence = [dict(row) for row in con.execute(
         "SELECT product_id,platform,title,url,status,last_checked_at FROM platform_evidence ORDER BY last_checked_at DESC LIMIT 100")]
     if public:

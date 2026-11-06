@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import sqlite3
+from radar.relevance import relevant_headline
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -193,12 +194,18 @@ def summaries(con: sqlite3.Connection, now: datetime | None = None) -> list[dict
     recent = iso_dt(now - timedelta(days=7))
     previous = iso_dt(now - timedelta(days=14))
     end = iso_dt(now)
-    obs = con.execute("""SELECT product_id, market,
-      SUM(CASE WHEN observed_at>=? AND observed_at<=? THEN 1 ELSE 0 END) AS cur,
-      SUM(CASE WHEN observed_at>=? AND observed_at<? THEN 1 ELSE 0 END) AS prev
-      FROM observations WHERE observed_at>=? AND observed_at<=?
-      GROUP BY product_id, market""", (recent,end,previous,recent,previous,end)).fetchall()
-    lookup = {(r["product_id"], r["market"]): (int(r["cur"] or 0),int(r["prev"] or 0)) for r in obs}
+    # RSS search engines may return articles on loosely related subjects.
+    # Ignore them for scoring unless the *headline* explicitly mentions the product.
+    rows = con.execute("""SELECT product_id,market,source,title,observed_at
+        FROM observations WHERE observed_at>=? AND observed_at<=?""", (previous,end)).fetchall()
+    counted = {}
+    for r in rows:
+        if not relevant_headline(r["product_id"],r["market"],r["title"],r["source"]):
+            continue
+        key=(r["product_id"],r["market"])
+        cur,prev=counted.get(key,(0,0))
+        counted[key]=(cur+1,prev) if r["observed_at"]>=recent else (cur,prev+1)
+    lookup=counted
     result = []
     for p in con.execute("SELECT * FROM products ORDER BY name"):
         a = con.execute("SELECT * FROM assessments WHERE product_id=?", (p["id"],)).fetchone()
