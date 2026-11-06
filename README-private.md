@@ -39,7 +39,7 @@ python -m streamlit run private_dashboard.py
 ## Passo 3 — Aceder no iPhone
 
 - Abre https://share.streamlit.io/ e cria uma nova app a partir do repositório GitHub, branch `main`, main file path `private_dashboard.py`.
-- Em **Advanced settings**, usa `requirements-private.txt` para instalar as dependências, se a plataforma permitir selecionar o ficheiro; caso não, instala `supabase` adicionando-o a `requirements.txt`.
+- O Streamlit Community Cloud deteta automaticamente `requirements.txt` na raiz do repositório, que já inclui o pacote `supabase`. Escolhe Python 3.11 ou uma versão compatível.
 - Em **App settings → Secrets**, adiciona as duas chaves anteriores. Os secrets ficam no servidor do Streamlit Cloud, nunca no GitHub. Usa o URL de deploy para aceder no iPhone.
 - A app exige login Supabase antes de consultar preços. O endereço Streamlit pode ser acessível publicamente, mas as tabelas privadas requerem autenticação, RLS e os grants previstos.
 - Nunca publiques no GitHub credenciais, contratos ou preços privados. A `data/radar.sqlite` no repositório contém apenas observações públicas; o GitHub Actions limpa a tabela local de avaliações antes de cada commit. Atenção: Git conserva histórico, por isso nunca deves guardar dados privados no ficheiro versionado.
