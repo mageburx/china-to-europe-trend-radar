@@ -1,0 +1,9 @@
+id,name,category,cn_query,pt_query,es_query,risk_level,notes
+car_gap,Organizador de espaço entre bancos do carro,Automóvel,汽车 座椅缝隙 收纳盒,organizador espaço bancos carro,organizador hueco asiento coche,medium,Verificar que não interfere com airbag ou cintos
+cable_clips,Clips de organização de cabos,Casa e escritório,桌面 理线夹,clips organizador cabos,clips organizador cables,low,Verificar materiais e rotulagem
+shoe_racks,Organizadores modulares de sapatos,Casa,鞋柜 收纳架,organizador sapatos modular,organizador zapatos modular,low,Verificar estabilidade e materiais
+packing_cubes,Organizadores compressíveis de viagem,Viagem,旅行 压缩 收纳袋,sacos compressão viagem,bolsas compresión viaje,low,Verificar materiais e qualidade
+pet_brush,Luva de escovagem para animais,Animais,宠物 梳毛 手套,luva escovagem animais,guante cepillo mascotas,medium,Verificar segurança dos materiais
+underbed_storage,Arrumação dobrável debaixo da cama,Casa,床底 折叠 收纳箱,caixa arrumação debaixo cama,caja almacenaje debajo cama,low,Verificar fechos e pequenas peças
+drawer_dividers,Divisórias ajustáveis para gavetas,Casa,抽屉 可调 分隔板,divisória ajustável gavetas,separadores ajustables cajones,low,Verificar durabilidade
+car_trunk,Organizador dobrável de bagageira,Automóvel,汽车 后备箱 收纳箱,organizador bagageira dobrável,organizador maletero plegable,low,Não interferir com equipamentos de segurança
