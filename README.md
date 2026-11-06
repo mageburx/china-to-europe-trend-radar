@@ -1,4 +1,4 @@
-# China-to-Europe Trend Radar — v0.7.1 · 0 €
+# China-to-Europe Trend Radar — v0.7.2 · 0 €
 
 **Dashboard:** https://mageburx.github.io/china-to-europe-trend-radar/
 
@@ -265,3 +265,14 @@ Somente títulos com um termo específico de produto entram no histórico. Um va
 (se não houver cupão, preço mínimo ou desconto ambiguamente condicionado).
 Não significa preço de aquisição grossista, transação concluída ou oportunidade de arbitragem.
 Os valores ficam no site público apenas como citações verificáveis de preços de retalho.
+
+### v0.7.2 — tendências setoriais sem falso sinal comercial
+
+Mesmo quando um RSS não menciona os 16 produtos em catálogo, pode mencionar
+classes de produtos (ex.: auriculares ou acessórios auto).
+O módulo `radar.china_topics` regista seis categorias de consumo com palavras-chave
+explícitas, título, editor, URL e data. O dashboard mostra os artigos nos
+últimos 14 dias e a diversidade de editoras.
+
+**Os temas não criam novos produtos, não entram no Opportunity Score e não
+representam crescimento:** são hipóteses editoriais para posterior investigação.

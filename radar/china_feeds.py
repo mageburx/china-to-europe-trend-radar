@@ -22,6 +22,7 @@ import requests
 
 from radar.candidate_discovery import ensure_candidates_table, extract_terms, extract_unmapped_terms
 from radar.core import DEFAULT_DB, connection, iso_dt, utcnow
+from radar.china_topics import ensure_topic_table, categorize_title
 
 LOG = logging.getLogger(__name__)
 MAX_FEED_BYTES = 1_500_000
@@ -188,6 +189,7 @@ def collect_direct_china(db: Path = DEFAULT_DB, session=None, timeout: int = 12,
     con = connection(db)
     ensure_candidates_table(con)
     ensure_china_feed_tables(con)
+    ensure_topic_table(con)
     try:
         for feed in feeds:
             result["feeds_checked"] += 1
@@ -205,6 +207,13 @@ def collect_direct_china(db: Path = DEFAULT_DB, session=None, timeout: int = 12,
                         continue
                     seen += 1
                     title = entry["title"]
+                    # Sector-level signals are kept separate from concrete candidates.
+                    for topic, token in categorize_title(title):
+                        con.execute("""INSERT OR IGNORE INTO china_topic_mentions
+                            (url,topic,matched_word,publisher,title,published_at)
+                            VALUES (?,?,?,?,?,?)""",
+                            (entry["url"],topic,token,feed.name,title,
+                             iso_dt(entry["published_at"])))
                     matches = list(dict.fromkeys(extract_terms(title) + extract_unmapped_terms(title)))
                     if not matches:
                         continue
