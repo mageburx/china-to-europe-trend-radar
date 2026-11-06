@@ -10,6 +10,7 @@ on:
       - 'config/platform_links.csv'
       - 'radar/platform_collect.py'
       - 'radar/core.py'
+      - 'radar/ebay_prices.py'
   schedule:
     - cron: '15 6 * * *'  # 06:15 UTC, diariamente; GitHub pode atrasar schedules
 permissions:
@@ -37,6 +38,11 @@ jobs:
         run: python -m radar.platform_collect --timeout 10
       - name: Recolher notícias RSS
         run: python -m radar.collect --timeout 10 --max-items 12
+      - name: Comparar preços de anúncios públicos no eBay Espanha (API gratuita opcional)
+        env:
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+        run: python -m radar.ebay_prices --max-products 8 --max-items 10
       - name: Limpar registos financeiros no SQLite público
         run: python -m radar.public_safety
       - name: Atualizar dashboard HTML público

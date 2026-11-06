@@ -8,6 +8,31 @@ A recolha RSS e o GitHub Pages continuam públicos. O novo `private_dashboard.py
 
 Radar de **hipóteses de produtos de consumo** para estudar diferenças temporais entre menções na China (CN) e na Europa (PT/ES). **Não mede vendas, nem demonstra tendências comerciais.**
 
+
+> **Orçamento de infraestrutura: 0 €** enquanto o repositório continuar público e forem usados apenas recursos gratuitos. Sem Supabase obrigatório, APIs pagas, LLMs pagos nem serviços de scraping pagos. Não adicionar dados comerciais privados a este repositório público.
+
+## Novidade v0.5 — descoberta sem APIs pagas
+
+- `radar.discover` pesquisa diariamente RSS de notícias chinesas por categorias e por grupos de produtos.
+- `radar.candidate_discovery` reconhece um vocabulário explícito de produtos e algumas expressões chinesas ainda sem tradução, todas como **hipóteses não verificadas**.
+- `radar.market_gap` escolhe até **6 candidatos nomeados por dia** e verifica, através dos mesmos RSS, notícias em português e espanhol sobre termos correspondentes. Não são consultas a lojas, vendas ou stocks.
+- Guarda as verificações em SQLite, incluindo falhas. Um zero nas pesquisas europeias só se apresenta como tal quando PT e ES foram consultados com sucesso nas últimas 48 horas. Caso contrário indica **comparação pendente**.
+- O dashboard público agrega fontes e comparações com evidência clicável. Não atribui uma pontuação comercial aos candidatos não validados.
+- `radar.platform_collect` continua limitado a páginas públicas previamente indicadas no CSV; **não existe scraping automático do catálogo Douyin/1688**.
+
+### Testar a recolha grátis
+
+```bash
+python -m radar.discover --timeout 10 --max-items 10
+python -m radar.candidate_discovery
+python -m radar.market_gap --max-topics 6 --max-items 10 --timeout 10
+python -m radar.report --public
+```
+
+No GitHub Actions a execução agendada permanece diária, às 06:15 UTC (com possíveis atrasos do agendador). O publicador Pages usa o mesmo HTML estático. As fontes RSS podem mudar, falhar ou limitar pesquisas sem aviso.
+
+**Definição operacional:** uma menção em RSS é apenas uma pista jornalística. A etiqueta “nenhuma encontrada no RSS PT/ES” **não** demonstra ausência de produtos ou vendedores na Europa. Vendas, custos, fornecedores, conformidade e concorrência direta continuam por validar manualmente.
+
 ## O que funciona nesta versão
 
 - Catálogo de oito produtos candidatos (exemplos de pesquisa, **não tendências identificadas**)
@@ -173,3 +198,17 @@ O CSV está intencionalmente vazio no primeiro commit; nenhuma observação prov
 O ficheiro `config/platform_links.csv` inclui três publicações do Douyin encontradas em fontes públicas, associadas a duas hipóteses já existentes no catálogo (organizadores de espaço entre bancos e de bagageira). O coletor apenas regista metadados públicos, quando acessíveis, numa tabela SQLite `platform_evidence`. Links indisponíveis não viram observações. Não infere datas de publicação, visualizações, vendas ou crescimento.
 
 **Dados sensíveis:** o repositório é público e `data/radar.sqlite` é versionado; logo, o SQLite NÃO É privado, mesmo que o site GitHub Pages omita valores comerciais. Não guardar preços negociados, contactos de fornecedores, dados pessoais ou credenciais neste ficheiro. Uma futura área privada deve ter armazenamento privado (por exemplo, Supabase com RLS e autenticação, ou repositório privado separado).
+
+
+## v0.6 — Preços europeus por API gratuita (opcional)
+
+Novo módulo: `radar/ebay_prices.py`. Consulta até **8 termos de pesquisa por dia** no **eBay Espanha**, até 10 anúncios por termo, usando a [Browse API oficial](https://developer.ebay.com/develop/apis/buy/browse/overview.html). O plano de programador pode ser usado gratuitamente dentro da quota aplicável. É necessário criar credenciais eBay Developer (produção) — **não publicar chaves no GitHub**. A execução sem credenciais sai com `not_configured` sem introduzir dados fictícios. Não é necessária nenhuma API paga.
+
+1. Criar conta de programador no [eBay Developers Program](https://developer.ebay.com/) e obter `Client ID` / `Client Secret` para **Production** (não Sandbox).
+2. No repositório GitHub → Settings → Secrets and variables → Actions, adicionar **repository secrets** `EBAY_CLIENT_ID` e `EBAY_CLIENT_SECRET`. **Não inserir valores em ficheiros nem na conversa.**
+3. Executar Actions → **Recolher sinais RSS** → Run workflow. O fluxo faz no máximo 8 pesquisas e guarda preços **anunciados e públicos** para Espanha, num histórico local SQLite (um registo por anúncio/dia).
+4. O dashboard passa a indicar o número de anúncios encontrados por termos e intervalo/mediana dos preços anunciados em EUR. Estados `not_verified` significam que não há verificação recente; não são zeros de anúncios.
+
+**Limites de interpretação:** matching é apenas por palavras-chave, não garante que o anúncio corresponda à variante exata. Não mede vendas, volume de procura, saturação, impostos, despesas de transporte, comissões ou margem. Nunca tratar preços eBay como preços grossistas chineses. O sistema não descarrega informação privada ou dados de conta. O eBay Browse API usa OAuth e credenciais gratuitas próprias; não há scraping de resultados eBay. Não usar preços para o Opportunity Score sem auditoria manual. Os dados de anúncios **públicos** passam a integrar o SQLite do repositório público, sem contatos privados de fornecedores.
+
+Sem credenciais, a recolha de notícias chinesas e a comparação RSS PT/ES continuam a funcionar; o módulo de preços fica sem dados e assinala essa limitação.
